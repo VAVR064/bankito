@@ -1,7 +1,4 @@
 import mysql.connector
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-from Crypto.Util.Padding import unpad
 import re
 
 #Required for de/encryption 
