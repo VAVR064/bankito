@@ -11,11 +11,11 @@ from mysql.connector import cursor
 #the_key = '0123456789'
 #ivd = b'0000000000000000'
 
-#dbuser = 'admin'
-dbuser = 'root'
+dbuser = 'admin'
+#dbuser = 'root'
 dbpswd = 'sakapuku123!'
-#dbhost = 'db-interbanks.c3ebzwhrotdf.us-east-2.rds.amazonaws.com'
-dbhost = 'localhost'
+dbhost = 'db-interbanks.c3ebzwhrotdf.us-east-2.rds.amazonaws.com'
+#dbhost = 'localhost'
 dbschema = 'bank_zeus'
 
 sm_accs = ["3847563921", "9855748371", "7733987112", "9843282828"]

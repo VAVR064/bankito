@@ -7,9 +7,11 @@ import re
 #Required for de/encryption 
 the_key = '0123456789'
 
-dbuser = 'root'
+dbuser = 'admin'
+#dbuser = 'root'
 dbpswd = 'sakapuku123!'
-dbhost = 'localhost'
+dbhost = 'db-interbanks.c3ebzwhrotdf.us-east-2.rds.amazonaws.com'
+#dbhost = 'localhost'
 dbschema = 'bank_zeus'
 
 def main():
