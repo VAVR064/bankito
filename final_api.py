@@ -11,15 +11,14 @@ from mysql.connector import cursor
 #the_key = '0123456789'
 #ivd = b'0000000000000000'
 
+#dbuser = 'admin'
 dbuser = 'root'
 dbpswd = 'sakapuku123!'
+#dbhost = 'db-interbanks.c3ebzwhrotdf.us-east-2.rds.amazonaws.com'
 dbhost = 'localhost'
 dbschema = 'bank_zeus'
 
-sm1_acc = "3847563921"
-sm2_acc = "9855748371"
-sm3_acc = "7733987112"
-sm4_acc = "9843282828"
+sm_accs = ["3847563921", "9855748371", "7733987112", "9843282828"]
 
 app = Flask(__name__)
 #app.debug = True
@@ -112,11 +111,12 @@ def verifyu(rtoken):
     accnum = data[2]
     #userpw = data[3]
 
-    head_match = bool(re.match("^\d{3}$",header))
+    head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
     user_match = bool(re.match("^\d{10}$",userid))
     uacc_match = bool(re.match("^\d{10}$",accnum))
+    card_match = bool(re.match("^\d{16}$",accnum))
 
-    if (not head_match or not user_match or not uacc_match):
+    if (not head_match or not user_match or (header[1] == "0" and not uacc_match) or (header[1] == "1" and not card_match)):
         return valid, gtoken
  
     try:
@@ -124,41 +124,85 @@ def verifyu(rtoken):
         
         cursor1 = conn.cursor()
 
-        epsw_sql = ("select acc_number from bnkz_accounts where acc_client = %s")
-        cursor1.execute(epsw_sql,(userid, ))
-        result = cursor1.fetchall()
+        if (header[1] == "0"):
 
-        if(len(result) == 0):
-            valid = 1
-        else:
-            accver = (result[0][0])
-            
-            if (accver == accnum):
-                valid = 0
-                
-                epsw_sql = ("select hex_tok from bnkz_atokens where acc_num = %s")
-                cursor1.execute(epsw_sql,(accnum, ))
-                resultt = cursor1.fetchall()
-                if(len(resultt) == 0):
-                    ntoken = None
-                    while (ntoken is None):
-                        ntoken = secrets.token_hex(16)
-                        epsw_sql = ("select * from bnkz_atokens where hex_tok = %s")
-                        cursor1.execute(epsw_sql,(ntoken, ))
-                        result = cursor1.fetchall()
-                        if(len(result) == 0):
-                            epsw_sql = ("insert into bnkz_atokens (acc_num, hex_tok) values (%s, %s)")
-                            epsw_sql_data = (accnum, ntoken)
-                            cursor1.execute(epsw_sql,epsw_sql_data)
-                            conn.commit()
-                            gtoken = ntoken
-                            break
-                        else:
-                            ntoken = None
-                else:
-                    gtoken = resultt[0][0]
-            else:
+            epsw_sql = ("select acc_number from bnkz_accounts where acc_client = %s and acc_bid = %s and acc_number = %s")
+            epsw_data = (userid, header[2], accnum)
+
+            cursor1.execute(epsw_sql,epsw_data)
+            result = cursor1.fetchall()
+
+            if(len(result) == 0):
                 valid = 1
+            else:
+                accver = (result[0][0])
+                
+                if (accver == accnum):
+                    valid = 0
+                    
+                    epsw_sql = ("select hex_tok from bnkz_atokens where acc_num = %s")
+                    cursor1.execute(epsw_sql,(accnum, ))
+                    resultt = cursor1.fetchall()
+                    if(len(resultt) == 0):
+                        ntoken = None
+                        while (ntoken is None):
+                            ntoken = secrets.token_hex(16)
+                            epsw_sql = ("select * from bnkz_atokens where hex_tok = %s")
+                            cursor1.execute(epsw_sql,(ntoken, ))
+                            result = cursor1.fetchall()
+                            if(len(result) == 0):
+                                epsw_sql = ("insert into bnkz_atokens (acc_num, hex_tok) values (%s, %s)")
+                                epsw_sql_data = (accnum, ntoken)
+                                cursor1.execute(epsw_sql,epsw_sql_data)
+                                conn.commit()
+                                gtoken = ntoken
+                                break
+                            else:
+                                ntoken = None
+                    else:
+                        gtoken = resultt[0][0]
+                else:
+                    valid = 1
+        
+        else:
+            print("Checking for card")
+            epsw_sql = ("select card_num from bnkz_cards where card_own = %s and card_num = %s")
+            epsw_data = (userid, accnum)
+
+            cursor1.execute(epsw_sql,epsw_data)
+            result = cursor1.fetchall()
+
+            if(len(result) == 0):
+                valid = 1
+            else:
+                accver = (result[0][0])
+                
+                if (accver == accnum):
+                    valid = 0
+                    
+                    epsw_sql = ("select hex_tok from bnkz_ctokens where card_num = %s")
+                    cursor1.execute(epsw_sql,(accnum, ))
+                    resultt = cursor1.fetchall()
+                    if(len(resultt) == 0):
+                        ntoken = None
+                        while (ntoken is None):
+                            ntoken = secrets.token_hex(16)
+                            epsw_sql = ("select * from bnkz_ctokens where hex_tok = %s")
+                            cursor1.execute(epsw_sql,(ntoken, ))
+                            result = cursor1.fetchall()
+                            if(len(result) == 0):
+                                epsw_sql = ("insert into bnkz_ctokens (card_num, hex_tok) values (%s, %s)")
+                                epsw_sql_data = (accnum, ntoken)
+                                cursor1.execute(epsw_sql,epsw_sql_data)
+                                conn.commit()
+                                gtoken = ntoken
+                                break
+                            else:
+                                ntoken = None
+                    else:
+                        gtoken = resultt[0][0]
+                else:
+                    valid = 1
                    
     except mysql.connector.Error as err:
         valid = 1
@@ -180,7 +224,7 @@ def verifyt(rtoken):
     tokenv = data[1]
     money = data[2]
 
-    head_match = bool(re.match("^\d{3}$",header))
+    head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
     tok_match = bool(re.match("^[0-9|a-f]{32}$",tokenv))
     fun_match = bool(re.match("^\d{1,13}\.\d{2}$",money))
 
@@ -192,6 +236,10 @@ def verifyt(rtoken):
         
         cursor1 = conn.cursor()
         epsw_sql = ("select acc_num from bnkz_atokens where hex_tok = %s")
+
+        if (header[1] == "1"):
+            epsw_sql = ("select card_num from bnkz_ctokens where hex_tok = %s")
+
         cursor1.execute(epsw_sql,(tokenv,))
         result = cursor1.fetchall()
         if (len(result) == 0):
@@ -199,7 +247,7 @@ def verifyt(rtoken):
 
         accpayer = result[0][0]
 
-        outcode = transFunds(conn, (accpayer, sm1_acc, money))
+        outcode = transFunds(conn, (header[1], accpayer, sm_accs[int(header[0])], money))
                    
     except mysql.connector.Error as err:
         outcode = 5
@@ -215,11 +263,15 @@ def transFunds(conn, args):
     try:
         cursor1 = conn.cursor()
         check_sql = ("select acc_funds from bnkz_accounts where acc_number = %s")
-        cursor1.execute(check_sql,(args[0],))
+        
+        if (args[0] == "1"):
+            check_sql = ("select card_funds from bnkz_cards where card_num = %s")
+
+        cursor1.execute(check_sql,(args[1],))
         results1 = cursor1.fetchall()
 
         check_sql = ("select acc_number from bnkz_accounts where acc_number = %s")
-        cursor1.execute(check_sql,(args[1],))
+        cursor1.execute(check_sql,(args[2],))
         results2 = cursor1.fetchall()
 
         if(len(results1) == 0):
@@ -229,16 +281,19 @@ def transFunds(conn, args):
         else:
             #print(results[0][0])
 
-            if (float(results1[0][0]) - float(args[2]) < 0):
+            if (float(results1[0][0]) - float(args[3]) < 0):
                 exitc = 1
             else:
                 upd_sql = ("update bnkz_accounts set acc_funds = acc_funds - %s where acc_number = %s")
-                upd_sql_data = (args[2], args[0])
+                if (args[0] == "1"):
+                    upd_sql = ("update bnkz_cards set card_funds = card_funds - %s where card_num = %s")
+
+                upd_sql_data = (args[3], args[1])
                 cursor1.execute(upd_sql,upd_sql_data)
                 conn.commit()
 
                 upd_sql = ("update bnkz_accounts set acc_funds = acc_funds + %s where acc_number = %s")
-                upd_sql_data = (args[2], args[1])
+                upd_sql_data = (args[3], args[2])
                 cursor1.execute(upd_sql,upd_sql_data)
                 conn.commit()
 
@@ -253,4 +308,4 @@ def transFunds(conn, args):
     return exitc
 
 if __name__ == '__main__':
-    app.run(port=5000)  # run our Flask app
+    app.run(host="0.0.0.0", port=5000)  # run our Flask app
