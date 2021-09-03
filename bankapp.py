@@ -62,10 +62,24 @@ def commands(conn):
                 rmQuota(conn, cmd_syntax[1:])
             elif (inst == "trans"):
                 transFunds(conn, cmd_syntax[1:])
+            elif (inst == "list"):
+                showCmd()
             elif (inst == "exit"):
                 break
             else:
                 print("Invalid command")
+
+def showCmd():
+    print("cuser <id> <nombre> <celular> <direccion sin espacios> <contraseña>")
+    print("cacc <no cuenta> <id cliente> <tipo cuenta> <fondos> <id banco>")
+    print("ccard <no tarjeta> <id cliente> <pin> <fondos>")
+    print("adda <no cuenta> <fondos>")
+    print("rma <no cuenta> <fondos>")
+    print("addc <no tarjeta> <fondos>")
+    print("rmc <no tarjeta> <fondos>")
+    print("trans <no cuenta envio> <no cuenta recibo> <fondos>")
+    print("list")
+    print("exit")
 
 def addFunds(conn, args):
     if (len(args) != 2):
