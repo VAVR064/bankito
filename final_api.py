@@ -401,7 +401,7 @@ def reverseFunds(conn, args):
         cursor1.execute(check_sql,(args[1],))
         results1 = cursor1.fetchall()
 
-        check_sql = ("select acc_number from bnkz_accounts where acc_number = %s")
+        check_sql = ("select acc_funds from bnkz_accounts where acc_number = %s")
         cursor1.execute(check_sql,(args[2],))
         results2 = cursor1.fetchall()
 
@@ -412,20 +412,23 @@ def reverseFunds(conn, args):
         else:
             #print(results[0][0])
 
-            upd_sql = ("update bnkz_accounts set acc_funds = acc_funds + %s where acc_number = %s")
-            if (args[0] == "1"):
-                upd_sql = ("update bnkz_cards set card_funds = card_funds + %s where card_num = %s")
+            if (float(results2[0][0]) - float(args[3]) < 0):
+                exitc = 1
+            else:
+                upd_sql = ("update bnkz_accounts set acc_funds = acc_funds + %s where acc_number = %s")
+                if (args[0] == "1"):
+                    upd_sql = ("update bnkz_cards set card_funds = card_funds + %s where card_num = %s")
 
-            upd_sql_data = (args[3], args[1])
-            cursor1.execute(upd_sql,upd_sql_data)
-            conn.commit()
+                upd_sql_data = (args[3], args[1])
+                cursor1.execute(upd_sql,upd_sql_data)
+                conn.commit()
 
-            upd_sql = ("update bnkz_accounts set acc_funds = acc_funds - %s where acc_number = %s")
-            upd_sql_data = (args[3], args[2])
-            cursor1.execute(upd_sql,upd_sql_data)
-            conn.commit()
+                upd_sql = ("update bnkz_accounts set acc_funds = acc_funds - %s where acc_number = %s")
+                upd_sql_data = (args[3], args[2])
+                cursor1.execute(upd_sql,upd_sql_data)
+                conn.commit()
 
-            exitc = 0
+                exitc = 0
                 
                 # print("Transferido $" + args[2] + " desde cuenta" + args[0] + " a la cuenta " + args[1] + " exitosamente")
             
