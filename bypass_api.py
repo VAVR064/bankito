@@ -1,4 +1,5 @@
 from flask import Flask, json
+import flask
 from flask_restful import Resource, Api, reqparse
 import re
 
@@ -104,9 +105,33 @@ class Payments(Resource):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result
 
+class Reverses(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()  # initialize
+        parser.add_argument('token', required=True)
+        args = parser.parse_args()  # parse arguments to dictionary
+
+        code = reverset(args['token'])
+
+        if(code == 0):
+            result = app.response_class( response = json.dumps({'code' : 0 , 'message': "OK"}), status=200, mimetype='application/json')
+        elif (code == 1):
+            result = app.response_class( response = json.dumps({'code' : 1 , 'message': "Fondos Insuficientes" }), status=404, mimetype='application/json')
+        elif (code == 2):
+            result = app.response_class( response = json.dumps({'code' : 2 , 'message': "Cuentas inexistentes" }), status=404, mimetype='application/json')
+        elif (code == 3):
+            result = app.response_class( response = json.dumps({'code' : 3 , 'message': "Token no válido" }), status=404, mimetype='application/json')
+        elif (code == 4):
+            result = app.response_class( response = json.dumps({'code' : 4 , 'message': "Solicitud erronea" }), status=400, mimetype='application/json')
+        else:
+            result = app.response_class( response = json.dumps({'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }), status=500, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
 
 api.add_resource(Users, '/users')
 api.add_resource(Payments, '/pays')
+api.add_resource(Reverses, '/reverse')
 
 def verifyu(rtoken):
     valid = 2
@@ -139,6 +164,32 @@ def verifyu(rtoken):
     return valid, gtoken
 
 def verifyt(rtoken):
+    outcode = 4
+
+    data = rtoken.split("-")
+    if (len(data) != 3):
+        return outcode
+
+    header = data[0]
+    tokenv = data[1]
+    money = data[2]
+
+    head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
+    tok_match = bool(re.match("^[0-9|a-f]{32}$",tokenv))
+    fun_match = bool(re.match("^\d{1,13}\.\d{2}$",money))
+
+    if (not head_match or not tok_match or not fun_match):
+        return outcode
+ 
+    try:
+        outcode = 0
+                   
+    except:
+        outcode = 5
+
+    return outcode
+
+def reverset(rtoken):
     outcode = 4
 
     data = rtoken.split("-")

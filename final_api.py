@@ -106,9 +106,34 @@ class Payments(Resource):
         result.headers.add('Access-Control-Allow-Origin', '*')
         return result
 
+class Reverses(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()  # initialize
+        parser.add_argument('token', required=True)
+        args = parser.parse_args()  # parse arguments to dictionary
+
+        code = reverset(args['token'])
+
+        if(code == 0):
+            result = app.response_class( response = json.dumps({'code' : 0 , 'message': "OK"}), status=200, mimetype='application/json')
+        elif (code == 1):
+            result = app.response_class( response = json.dumps({'code' : 1 , 'message': "Fondos Insuficientes" }), status=404, mimetype='application/json')
+        elif (code == 2):
+            result = app.response_class( response = json.dumps({'code' : 2 , 'message': "Cuentas inexistentes" }), status=404, mimetype='application/json')
+        elif (code == 3):
+            result = app.response_class( response = json.dumps({'code' : 3 , 'message': "Token no válido" }), status=404, mimetype='application/json')
+        elif (code == 4):
+            result = app.response_class( response = json.dumps({'code' : 4 , 'message': "Solicitud erronea" }), status=400, mimetype='application/json')
+        else:
+            result = app.response_class( response = json.dumps({'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }), status=500, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
+
 
 api.add_resource(Users, '/users')
 api.add_resource(Payments, '/pays')
+api.add_resource(Reverses, '/reverse')
 
 def verifyu(rtoken):
     valid = 2
@@ -269,6 +294,50 @@ def verifyt(rtoken):
     
     return outcode
 
+def reverset(rtoken):
+    outcode = 4
+
+    data = rtoken.split("-")
+    if (len(data) != 3):
+        return outcode
+
+    header = data[0]
+    tokenv = data[1]
+    money = data[2]
+
+    head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
+    tok_match = bool(re.match("^[0-9|a-f]{32}$",tokenv))
+    fun_match = bool(re.match("^\d{1,13}\.\d{2}$",money))
+
+    if (not head_match or not tok_match or not fun_match):
+        return outcode
+ 
+    try:
+        conn = mysql.connector.connect(user=dbuser, password=dbpswd, host=dbhost, database=dbschema)
+        
+        cursor1 = conn.cursor()
+        epsw_sql = ("select acc_num from bnkz_atokens where hex_tok = %s")
+
+        if (header[1] == "1"):
+            epsw_sql = ("select card_num from bnkz_ctokens where hex_tok = %s")
+
+        cursor1.execute(epsw_sql,(tokenv,))
+        result = cursor1.fetchall()
+        if (len(result) == 0):
+            return 3
+
+        accpayer = result[0][0]
+
+        outcode = reverseFunds(conn, (header[1], accpayer, sm_accs[int(header[0])], money))
+                   
+    except mysql.connector.Error as err:
+        outcode = 5
+    finally:
+        cursor1.close()
+        conn.close()
+    
+    return outcode
+
 def transFunds(conn, args):
     exitc = 5
 
@@ -310,6 +379,53 @@ def transFunds(conn, args):
                 conn.commit()
 
                 exitc = 0
+                
+                # print("Transferido $" + args[2] + " desde cuenta" + args[0] + " a la cuenta " + args[1] + " exitosamente")
+            
+    except mysql.connector.Error as err:
+        exitc = 3
+
+    cursor1.close()
+    return exitc
+
+def reverseFunds(conn, args):
+    exitc = 5
+
+    try:
+        cursor1 = conn.cursor()
+        check_sql = ("select acc_funds from bnkz_accounts where acc_number = %s")
+        
+        if (args[0] == "1"):
+            check_sql = ("select card_funds from bnkz_cards where card_num = %s")
+
+        cursor1.execute(check_sql,(args[1],))
+        results1 = cursor1.fetchall()
+
+        check_sql = ("select acc_number from bnkz_accounts where acc_number = %s")
+        cursor1.execute(check_sql,(args[2],))
+        results2 = cursor1.fetchall()
+
+        if(len(results1) == 0):
+            exitc = 2
+        elif(len(results2) == 0):
+            exitc = 2
+        else:
+            #print(results[0][0])
+
+            upd_sql = ("update bnkz_accounts set acc_funds = acc_funds + %s where acc_number = %s")
+            if (args[0] == "1"):
+                upd_sql = ("update bnkz_cards set card_funds = card_funds + %s where card_num = %s")
+
+            upd_sql_data = (args[3], args[1])
+            cursor1.execute(upd_sql,upd_sql_data)
+            conn.commit()
+
+            upd_sql = ("update bnkz_accounts set acc_funds = acc_funds - %s where acc_number = %s")
+            upd_sql_data = (args[3], args[2])
+            cursor1.execute(upd_sql,upd_sql_data)
+            conn.commit()
+
+            exitc = 0
                 
                 # print("Transferido $" + args[2] + " desde cuenta" + args[0] + " a la cuenta " + args[1] + " exitosamente")
             
