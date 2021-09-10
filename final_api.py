@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, json
 from flask_restful import Resource, Api, reqparse
 import re
 import mysql.connector
@@ -30,28 +30,34 @@ class Users(Resource):
         parser.add_argument('token', required=True)
         args = parser.parse_args()  # parse arguments to dictionary
 
-        flag, token = verifyu(args['token'])
+        flag, rtoken = verifyu(args['token'])
 
         if(flag == 1):
-            return {'message': "Usuario o cuenta no encontrados" }, 404
+            result = app.response_class( response = json.dumps({'message' : "Usuario o cuenta no encontrados"}), status=404, mimetype='application/json')
         elif(flag == 2):
-            return {'message': "Solicitud erronea" }, 400
+            result = app.response_class( response = json.dumps({'message' : "Solicitud erronea"}), status=400, mimetype='application/json')
         else:
-            return {"token" : token} , 200
+            result = app.response_class( response = json.dumps({'token' : rtoken}), status=200, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
 
     def post(self):
         parser = reqparse.RequestParser()  # initialize
         parser.add_argument('token', required=True)
         args = parser.parse_args()  # parse arguments to dictionary
 
-        flag, token = verifyu(args['token'])
+        flag, rtoken = verifyu(args['token'])
 
         if(flag == 1):
-            return {'message': "Usuario o cuenta no encontrados" }, 404
+            result = app.response_class( response = json.dumps({'message' : "Usuario o cuenta no encontrados"}), status=404, mimetype='application/json')
         elif(flag == 2):
-            return {'message': "Solicitud erronea" }, 400
+            result = app.response_class( response = json.dumps({'message' : "Solicitud erronea"}), status=400, mimetype='application/json')
         else:
-            return {"token" : token} , 200
+            result = app.response_class( response = json.dumps({'token' : rtoken}), status=200, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
 
 class Payments(Resource):
     def get(self):
@@ -62,17 +68,20 @@ class Payments(Resource):
         code = verifyt(args['token'])
 
         if(code == 0):
-            return {'code' : 0 , 'message': "OK"}, 200
+            result = app.response_class( response = json.dumps({'code' : 0 , 'message': "OK"}), status=200, mimetype='application/json')
         elif (code == 1):
-            return {'code' : 1 , 'message': "Fondos Insuficientes" }, 404
+            result = app.response_class( response = json.dumps({'code' : 1 , 'message': "Fondos Insuficientes" }), status=404, mimetype='application/json')
         elif (code == 2):
-            return {'code' : 2 , 'message': "Cuentas inexistentes" }, 404
+            result = app.response_class( response = json.dumps({'code' : 2 , 'message': "Cuentas inexistentes" }), status=404, mimetype='application/json')
         elif (code == 3):
-            return {'code' : 3 , 'message': "Token no válido" }, 404
+            result = app.response_class( response = json.dumps({'code' : 3 , 'message': "Token no válido" }), status=404, mimetype='application/json')
         elif (code == 4):
-            return {'code' : 4 , 'message': "Solicitud erronea" }, 400
+            result = app.response_class( response = json.dumps({'code' : 4 , 'message': "Solicitud erronea" }), status=400, mimetype='application/json')
         else:
-            return {'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }, 404
+            result = app.response_class( response = json.dumps({'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }), status=500, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
 
     def post(self):
         parser = reqparse.RequestParser()  # initialize
@@ -82,17 +91,20 @@ class Payments(Resource):
         code = verifyt(args['token'])
 
         if(code == 0):
-            return {'code' : 0 , 'message': "OK"}, 200
+            result = app.response_class( response = json.dumps({'code' : 0 , 'message': "OK"}), status=200, mimetype='application/json')
         elif (code == 1):
-            return {'code' : 1 , 'message': "Fondos Insuficientes" }, 404
+            result = app.response_class( response = json.dumps({'code' : 1 , 'message': "Fondos Insuficientes" }), status=404, mimetype='application/json')
         elif (code == 2):
-            return {'code' : 2 , 'message': "Cuentas inexistentes" }, 404
+            result = app.response_class( response = json.dumps({'code' : 2 , 'message': "Cuentas inexistentes" }), status=404, mimetype='application/json')
         elif (code == 3):
-            return {'code' : 3 , 'message': "Token no válido" }, 404
+            result = app.response_class( response = json.dumps({'code' : 3 , 'message': "Token no válido" }), status=404, mimetype='application/json')
         elif (code == 4):
-            return {'code' : 4 , 'message': "solicitud erronea" }, 400
+            result = app.response_class( response = json.dumps({'code' : 4 , 'message': "Solicitud erronea" }), status=400, mimetype='application/json')
         else:
-            return {'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }, 404
+            result = app.response_class( response = json.dumps({'code' : 5 , 'message': "Ha ocurrido un error, intente más tarde" }), status=500, mimetype='application/json')
+
+        result.headers.add('Access-Control-Allow-Origin', '*')
+        return result
 
 
 api.add_resource(Users, '/users')
