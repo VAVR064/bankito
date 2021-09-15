@@ -52,6 +52,8 @@ def commands(conn):
                 createAcc(conn, cmd_syntax[1:])
             elif (inst == "ccard"):
                 createCard(conn, cmd_syntax[1:])
+            elif (inst == "wuser"):
+                showUser(conn, cmd_syntax[1:])
             elif (inst == "wacc"):
                 showAcc(conn, cmd_syntax[1:])
             elif (inst == "wcard"):
@@ -77,6 +79,7 @@ def showCmd():
     print("cuser <id> <nombre> <celular> <direccion sin espacios> <contraseña>")
     print("cacc <no cuenta> <id cliente> <tipo cuenta> <fondos> <id banco>")
     print("ccard <no tarjeta> <id cliente> <pin> <fondos>")
+    print("wuser -all | <id cliente>")
     print("wacc -all | <no cuenta>")
     print("wcard -all | <no tarjeta>")
     print("adda <no cuenta> <fondos>")
@@ -86,6 +89,56 @@ def showCmd():
     print("trans <no cuenta envio> <no cuenta recibo> <fondos>")
     print("list")
     print("exit")
+
+def showUser(conn, args):
+    if (len(args) != 1):
+        print("Invalid number of arguments")
+    else:
+        if(args[0] == "-all"):
+            try:
+                cursor1 = conn.cursor()
+                check_sql = ("select client_id, client_name from bnkz_clients")
+                cursor1.execute(check_sql)
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("No existen usuarios en la base")
+                else:
+                    print("ID cliente | Nombre cliente")
+                    for rowr in results:
+                        print( str(rowr[0]) + " | " + str(rowr[1]))
+
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
+
+        else:
+            try:
+                acc_match = bool(re.match("^\d{10}$",args[0]))
+
+                if (not acc_match):
+                    print("Invalid arguments")
+                    return
+
+                cursor1 = conn.cursor()
+                check_sql = ("select client_id, client_name from bnkz_clients where client_id = %s")
+                cursor1.execute(check_sql,(args[0],))
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("Usuario con ID " + args[0] + " no existe")
+                else:
+                    print("ID cliente | Nombre cliente")
+                    rowr = results[0]
+                    print( str(rowr[0]) + " | " + str(rowr[1]))
+                
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
+
+
 
 def showAcc(conn, args):
     if (len(args) != 1):
