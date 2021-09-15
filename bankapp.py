@@ -52,6 +52,10 @@ def commands(conn):
                 createAcc(conn, cmd_syntax[1:])
             elif (inst == "ccard"):
                 createCard(conn, cmd_syntax[1:])
+            elif (inst == "wacc"):
+                showAcc(conn, cmd_syntax[1:])
+            elif (inst == "wcard"):
+                showCard(conn, cmd_syntax[1:])
             elif (inst == "adda"):
                 addFunds(conn, cmd_syntax[1:])
             elif (inst == "rma"):
@@ -73,6 +77,8 @@ def showCmd():
     print("cuser <id> <nombre> <celular> <direccion sin espacios> <contraseña>")
     print("cacc <no cuenta> <id cliente> <tipo cuenta> <fondos> <id banco>")
     print("ccard <no tarjeta> <id cliente> <pin> <fondos>")
+    print("wacc -all | <no cuenta>")
+    print("wcard -all | <no tarjeta>")
     print("adda <no cuenta> <fondos>")
     print("rma <no cuenta> <fondos>")
     print("addc <no tarjeta> <fondos>")
@@ -80,6 +86,103 @@ def showCmd():
     print("trans <no cuenta envio> <no cuenta recibo> <fondos>")
     print("list")
     print("exit")
+
+def showAcc(conn, args):
+    if (len(args) != 1):
+        print("Invalid number of arguments")
+    else:
+        if(args[0] == "-all"):
+            try:
+                cursor1 = conn.cursor()
+                check_sql = ("select acc_number, acc_client, acc_funds, acc_bid from bnkz_accounts")
+                cursor1.execute(check_sql)
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("No existen cuentas en la base")
+                else:
+                    print("No cuenta | ID cliente | Fondos | ID Banco")
+                    for rowr in results:
+                        print( str(rowr[0]) + " | " + str(rowr[1]) + " | " + str(rowr[2]) + " | " +  str(rowr[3]))
+
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
+
+        else:
+            try:
+                acc_match = bool(re.match("^\d{10}$",args[0]))
+
+                if (not acc_match):
+                    print("Invalid arguments")
+                    return
+
+                cursor1 = conn.cursor()
+                check_sql = ("select acc_number, acc_client, acc_funds, acc_bid from bnkz_accounts where acc_number = %s")
+                cursor1.execute(check_sql,(args[0],))
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("Cuenta " + args[0] + " no existe")
+                else:
+                    print("No cuenta | ID cliente | Fondos | ID Banco")
+                    rowr = results[0]
+                    print( str(rowr[0]) + " | " + str(rowr[1]) + " | " + str(rowr[2]) + " | " +  str(rowr[3]))
+                
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
+
+def showCard(conn, args):
+    if (len(args) != 1):
+        print("Invalid number of arguments")
+    else:
+        if(args[0] == "-all"):
+            try:
+                cursor1 = conn.cursor()
+                check_sql = ("select card_num, card_own, card_funds from bnkz_cards")
+                cursor1.execute(check_sql)
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("No existen tarjetas en la base")
+                else:
+                    print("No tarjeta | ID cliente | Cupo")
+                    for rowr in results:
+                        print( str(rowr[0]) + " | " + str(rowr[1]) + " | " + str(rowr[2]))
+
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
+
+        else:
+            try:
+                acc_match = bool(re.match("^\d{16}$",args[0]))
+
+                if (not acc_match):
+                    print("Invalid arguments")
+                    return
+                
+                cursor1 = conn.cursor()
+                check_sql = ("select card_num, card_own, card_funds from bnkz_cards where card_num = %s")
+                cursor1.execute(check_sql,(args[0],))
+                results = cursor1.fetchall()
+
+                if(len(results) == 0):
+                    print("Tarjeta " + args[0] + " no existe")
+                else:
+                    print("No tarjeta | ID cliente | Cupo")
+                    rowr = results[0]
+                    print(str(rowr[0]) + " | " + str(rowr[1]) + " | " + str(rowr[2]))
+
+
+            except mysql.connector.Error as err:
+                print(err)
+
+            cursor1.close()
 
 def addFunds(conn, args):
     if (len(args) != 2):
