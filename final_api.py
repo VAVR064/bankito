@@ -263,7 +263,7 @@ def verifyt(rtoken):
 
     head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
     tok_match = bool(re.match("^[0-9|a-f]{32}$",tokenv))
-    fun_match = bool(re.match("^\d{1,13}\.\d{2}$",money))
+    fun_match = bool(re.match("^\d{1,13}(\.\d{1,2})?$",money))
 
     if (not head_match or not tok_match or not fun_match):
         return outcode
@@ -307,7 +307,7 @@ def reverset(rtoken):
 
     head_match = bool(re.match("^[0-3]{1}[0|1]{1}[0-2]{1}$",header))
     tok_match = bool(re.match("^[0-9|a-f]{32}$",tokenv))
-    fun_match = bool(re.match("^\d{1,13}\.\d{2}$",money))
+    fun_match = bool(re.match("^\d{1,13}(\.\d{1,2})?$",money))
 
     if (not head_match or not tok_match or not fun_match):
         return outcode
