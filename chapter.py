@@ -1,11 +1,11 @@
 from flask import Flask, json, request
-from flask_restful import Resource, Api, reqparse
-import re
+from flask_restful import Resource, Api
 
 app = Flask(__name__)
+app.debug = False
 api = Api(app)
 
-ACCOUNTS = []
+ACCOUNTS = [{"name": "admin", "account": 9999999999, "balance": 1000.00}]
 
 def add(name = "admin", account = 9999999999, balance = 1000.00):
     ACCOUNTS.append({"name": name, "account": account, "balance": balance})
@@ -58,5 +58,4 @@ class Users(Resource):
 api.add_resource(Users, '/users')
 
 if __name__ == '__main__':
-    add()
     app.run(host="0.0.0.0", port=5000)  # run our Flask app
